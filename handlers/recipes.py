@@ -6,6 +6,7 @@ from database.repositories import RecipeRepository, UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import logging
+import asyncio
 from handlers.common import get_main_kb
 
 router = Router()
@@ -96,8 +97,11 @@ async def process_servings(
                 ],
                 [
                     types.InlineKeyboardButton(
+                        text="⏱️ Засечь время", callback_data="set_timer"
+                    ),
+                    types.InlineKeyboardButton(
                         text="⬅️ Назад", callback_data="start_new_search"
-                    )
+                    ),
                 ],
             ]
         )
@@ -111,6 +115,43 @@ async def process_servings(
             "❌ Произошла ошибка при связи с Шефом. Попробуйте через минуту."
         )
         await state.clear()
+
+
+@router.message(RecipeStates.waiting_for_timer)
+async def start_timer(message: types.Message, state: FSMContext):
+    if message.text == "Отмена":
+        await state.clear()
+        from handlers.common import get_main_kb
+
+        await message.answer("Таймер отменен.", reply_markup=get_main_kb())
+        return
+
+    try:
+        minutes = int("".join(filter(str.isdigit, message.text)))
+    except ValueError:
+        await message.answer("Пожалуйста, введите число минут (например, 15).")
+        return
+
+    if minutes <= 0 or minutes > 180:
+        await message.answer("Введите время от 1 до 180 минут.")
+        return
+
+    from handlers.common import get_main_kb
+
+    await message.answer(
+        f"✅ Таймер запущен на {minutes} мин! Я напишу, когда время выйдет.",
+        reply_markup=get_main_kb(),
+    )
+    await state.clear()
+
+    asyncio.create_task(timer_worker(message, minutes))
+
+
+async def timer_worker(message: types.Message, minutes: int):
+    await asyncio.sleep(minutes * 60)
+    await message.answer(
+        f"🔔 **ВРЕМЯ ВЫШЛО! ({minutes} мин)**\nПора проверить ваше блюдо! 👨‍🍳"
+    )
 
 
 @router.callback_query(F.data == "save_recipe")
@@ -201,3 +242,22 @@ async def shopping_list_callback(callback: types.CallbackQuery, ai_service: AISe
         await callback.message.answer(
             "❌ Не удалось составить список покупок. Попробуйте вручную."
         )
+
+
+@router.callback_query(F.data == "set_timer")
+async def timer_request(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(RecipeStates.waiting_for_timer)
+
+    builder = types.ReplyKeyboardMarkup(
+        keyboard=[
+            [types.KeyboardButton(text="5 мин"), types.KeyboardButton(text="10 мин")],
+            [types.KeyboardButton(text="20 мин"), types.KeyboardButton(text="30 мин")],
+            [types.KeyboardButton(text="Отмена")],
+        ],
+        resize_keyboard=True,
+    )
+
+    await callback.message.answer(
+        "На сколько минут завести таймер?", reply_markup=builder
+    )
+    await callback.answer()

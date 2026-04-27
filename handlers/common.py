@@ -26,16 +26,21 @@ async def cmd_start(message: types.Message, state: FSMContext, session: AsyncSes
     await message.answer("Привет! Я твой Шеф-бот. Что сделаем?", reply_markup=keyboard)
 
 
-@router.message(F.text == "/my_recipes")
-@router.message(Command("my_recipes"))
-async def show_favorites(message: types.Message, session: AsyncSession):
+async def show_favorites_logic(
+    message: types.Message, user_id: int, session: AsyncSession
+):
     repo = RecipeRepository(session)
-    recipes = await repo.get_user_recipes(message.from_user.id)
+    recipes = await repo.get_user_recipes(user_id)
 
     if not recipes:
-        await message.answer(
-            "У вас пока нет сохраненных рецептов. Сначала приготовьте что-нибудь! 👨‍🍳"
-        )
+        if message.reply_markup:
+            await message.edit_text(
+                "У вас пока нет сохраненных рецептов. Сначала приготовьте что-нибудь! 👨‍🍳"
+            )
+        else:
+            await message.answer(
+                "У вас пока нет сохраненных рецептов. Сначала приготовьте что-нибудь! 👨‍🍳"
+            )
         return
 
     builder = InlineKeyboardBuilder()
@@ -44,11 +49,18 @@ async def show_favorites(message: types.Message, session: AsyncSession):
             types.InlineKeyboardButton(text=r.title, callback_data=f"view_{r.id}")
         )
 
-    await message.answer(
-        "<b>Ваша кулинарная книга:</b>\nВыберите рецепт для просмотра:",
-        reply_markup=builder.as_markup(),
-        parse_mode="HTML",
-    )
+    if message.reply_markup:
+        await message.edit_text(
+            "<b>Ваша кулинарная книга:</b>",
+            reply_markup=builder.as_markup(),
+            parse_mode="HTML",
+        )
+    else:
+        await message.answer(
+            "<b>Ваша кулинарная книга:</b>",
+            reply_markup=builder.as_markup(),
+            parse_mode="HTML",
+        )
 
 
 @router.message(F.text == "👤 Мой профиль")
@@ -59,7 +71,6 @@ async def profile_btn(message: types.Message, session: AsyncSession):
 
 
 @router.message(F.text == "⭐ Избранное")
-async def favorites_btn(message: types.Message, session: AsyncSession):
-    from handlers.common import show_favorites
-
-    await show_favorites(message, session)
+@router.message(Command("my_recipes"))
+async def show_favorites(message: types.Message, session: AsyncSession):
+    await show_favorites_logic(message, message.from_user.id, session)

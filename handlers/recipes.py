@@ -85,12 +85,16 @@ async def process_servings(
         inline_keyboard=[
             [
                 types.InlineKeyboardButton(
-                    text="⭐ Сохранить с КБЖУ", callback_data="save_recipe"
-                )
+                    text="⭐ Сохранить", callback_data="save_recipe"
+                ),
+                types.InlineKeyboardButton(
+                    text="⬅️ Назад", callback_data="start_new_search"
+                ),
             ]
         ]
     )
 
+    await wait_msg.delete()
     await message.answer(recipe_text, reply_markup=kb, parse_mode="MARKDOWN")
     await state.clear()
 
@@ -140,8 +144,17 @@ async def view_recipe(callback: types.CallbackQuery, session: AsyncSession):
 
 @router.callback_query(F.data == "back_to_list")
 async def back_to_list(callback: types.CallbackQuery, session: AsyncSession):
-    await show_favorites(callback.message, session)
+    from handlers.common import show_favorites_logic
+
+    await show_favorites_logic(callback.message, callback.from_user.id, session)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "start_new_search")
+async def start_new_search(callback: types.CallbackQuery):
+    await callback.message.answer("Выберите действие в меню ниже 👇")
     await callback.message.delete()
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("delete_"))

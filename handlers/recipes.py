@@ -91,9 +91,14 @@ async def process_servings(
                         text="⭐ Сохранить", callback_data="save_recipe"
                     ),
                     types.InlineKeyboardButton(
-                        text="⬅️ Назад", callback_data="start_new_search"
+                        text="📋 Список покупок", callback_data="get_shopping_list"
                     ),
-                ]
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="⬅️ Назад", callback_data="start_new_search"
+                    )
+                ],
             ]
         )
 
@@ -177,3 +182,22 @@ async def delete_recipe(callback: types.CallbackQuery, session: AsyncSession):
     await repo.delete_recipe(recipe_id)
     await callback.answer("Рецепт удален!")
     await back_to_list(callback, session)
+
+
+@router.callback_query(F.data == "get_shopping_list")
+async def shopping_list_callback(callback: types.CallbackQuery, ai_service: AIService):
+    await callback.answer("Составляю список... 🛒")
+
+    recipe_text = callback.message.text
+
+    try:
+        shopping_list = await ai_service.get_shopping_list(recipe_text)
+
+        await callback.message.answer(
+            f"🛒 **Ваш список покупок:**\n\n{shopping_list}", parse_mode="MARKDOWN"
+        )
+    except Exception as e:
+        logging.error(f"Shopping List Error: {e}")
+        await callback.message.answer(
+            "❌ Не удалось составить список покупок. Попробуйте вручную."
+        )

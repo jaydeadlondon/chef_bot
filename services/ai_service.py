@@ -8,6 +8,10 @@ class AIService(ABC):
     async def get_recipe_suggestions(self, ingredients: str) -> str:
         pass
 
+    @abstractmethod
+    async def get_shopping_list(self, recipe_text: str) -> str:
+        pass
+
 
 class GigaChatService(AIService):
     def __init__(self):
@@ -32,4 +36,15 @@ class GigaChatService(AIService):
         )
 
         response = self.client.chat(f"{system_instruction}\n\nЗапрос: {prompt}")
+        return response.choices[0].message.content
+
+    async def get_shopping_list(self, recipe_text: str) -> str:
+        prompt = (
+            "Проанализируй этот рецепт и составь краткий список покупок. "
+            "Выпиши только названия продуктов и их количество. "
+            "Используй формат списка с эмодзи чекбоксов (✅). "
+            "Не пиши ничего лишнего, только список.\n\n"
+            f"Рецепт: {recipe_text}"
+        )
+        response = self.client.chat(prompt)
         return response.choices[0].message.content

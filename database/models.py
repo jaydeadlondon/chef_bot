@@ -13,6 +13,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     username: Mapped[str | None] = mapped_column(String(32))
+    preferences: Mapped[str | None] = mapped_column(Text, default="Нет ограничений")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     favorites: Mapped[list["FavoriteRecipe"]] = relationship(back_populates="user")

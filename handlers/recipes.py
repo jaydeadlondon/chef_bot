@@ -2,7 +2,7 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from states.recipe import RecipeStates
 from services.ai_service import AIService
-from database.repositories import RecipeRepository
+from database.repositories import RecipeRepository, UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from .common import show_favorites
@@ -113,3 +113,29 @@ async def delete_recipe(callback: types.CallbackQuery, session: AsyncSession):
     await repo.delete_recipe(recipe_id)
     await callback.answer("Рецепт удален!")
     await back_to_list(callback, session)
+
+
+@router.message(RecipeStates.waiting_for_servings)
+async def process_finish(
+    message: types.Message,
+    state: FSMContext,
+    ai_service: AIService,
+    session: AsyncSession,
+):
+    data = await state.get_data()
+
+    user_repo = UserRepository(session)
+    user = await user_repo.get_user(message.from_user.id)
+
+    wait_msg = await message.answer(
+        "Шеф готовит ответ, учитывая пожелания в вашем профиле... ⏳"
+    )
+
+    full_prompt = (
+        f"Продукты: {data['ingredients']}. "
+        f"Дополнительные пожелания к этому блюду: {data['preferences']}. "
+        f"Постоянные ограничения пользователя: {user.preferences}. "
+        f"Количество порций: {message.text}."
+    )
+
+    recipe_text = await ai_service.get_recipe_suggestions(full_prompt)

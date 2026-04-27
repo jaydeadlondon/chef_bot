@@ -8,7 +8,7 @@ from redis.asyncio import Redis
 
 from core.config import config
 from database.engine import init_db, async_session
-from handlers import common, recipes
+from handlers import common, recipes, profile
 from services.ai_service import GigaChatService
 from middlewares.db_middleware import DbSessionMiddleware
 
@@ -30,6 +30,7 @@ async def main():
 
     dp.include_router(common.router)
     dp.include_router(recipes.router)
+    dp.include_router(profile.router)
 
     ai_service = GigaChatService()
     await dp.start_polling(bot, ai_service=ai_service)

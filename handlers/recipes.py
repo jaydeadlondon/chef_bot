@@ -2,6 +2,8 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from states.recipe import RecipeStates
 from services.ai_service import AIService
+from database.repositories import RecipeRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
 
@@ -33,8 +35,36 @@ async def process_finish(
     message: types.Message, state: FSMContext, ai_service: AIService
 ):
     data = await state.get_data()
-    await message.answer("Шеф готовит ответ... ⏳")
+    wait_msg = await message.answer("Шеф готовит ответ... ⏳")
+
     prompt = f"Продукты: {data['ingredients']}, предпочтения: {data['preferences']}, порции: {message.text}"
-    res = await ai_service.get_recipe_suggestions(prompt)
-    await message.answer(res)
+    recipe_text = await ai_service.get_recipe_suggestions(prompt)
+
+    kb = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="⭐ Сохранить в избранное", callback_data="save_recipe"
+                )
+            ]
+        ]
+    )
+
+    await wait_msg.delete()
+    await message.answer(recipe_text, reply_markup=kb)
     await state.clear()
+
+
+@router.callback_query(F.data == "save_recipe")
+async def save_to_favorites(callback: types.CallbackQuery, session: AsyncSession):
+    repo = RecipeRepository(session)
+
+    recipe_text = callback.message.text
+    title = recipe_text.split("\n")[0][:50]
+
+    await repo.save_recipe(
+        tg_id=callback.from_user.id, title=title, content=recipe_text
+    )
+
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.answer("Рецепт сохранен!")

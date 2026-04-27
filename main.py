@@ -26,7 +26,7 @@ async def main():
     )
     dp = Dispatcher(storage=storage)
 
-    dp.message.middleware(DbSessionMiddleware(async_session))
+    dp.update.outer_middleware(DbSessionMiddleware(async_session))
 
     dp.include_router(common.router)
     dp.include_router(recipes.router)

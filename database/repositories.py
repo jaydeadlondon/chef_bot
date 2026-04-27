@@ -3,28 +3,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import User, FavoriteRecipe
 
 
-class UserRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def get_or_create_user(self, tg_id: int, username: str | None) -> User:
-        query = select(User).where(User.tg_id == tg_id)
-        result = await self.session.execute(query)
-        user = result.scalar_one_or_none()
-
-        if not user:
-            user = User(tg_id=tg_id, username=username)
-            self.session.add(user)
-            await self.session.commit()
-            await self.session.refresh(user)
-        return user
-
-
 class RecipeRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def save_favorite(self, user_id: int, title: str, content: str):
-        recipe = FavoriteRecipe(user_id=user_id, title=title, content=content)
-        self.session.add(recipe)
+    async def save_recipe(self, tg_id: int, title: str, content: str):
+        user_query = select(User).where(User.tg_id == tg_id)
+        result = await self.session.execute(user_query)
+        user = result.scalar_one()
+
+        new_recipe = FavoriteRecipe(user_id=user.id, title=title, content=content)
+        self.session.add(new_recipe)
         await self.session.commit()
+
+    async def get_user_recipes(self, tg_id: int):
+        query = (
+            select(FavoriteRecipe)
+            .join(User)
+            .where(User.tg_id == tg_id)
+            .order_by(FavoriteRecipe.id.desc())
+        )
+        result = await self.session.execute(query)
+        return result.scalars().all()

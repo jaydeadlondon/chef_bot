@@ -2,6 +2,8 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from redis.asyncio import Redis
 
 from core.config import config
@@ -18,7 +20,10 @@ async def main():
     redis = Redis(host=config.redis_host, port=config.redis_port)
     storage = RedisStorage(redis=redis)
 
-    bot = Bot(token=config.bot_token.get_secret_value())
+    bot = Bot(
+        token=config.bot_token.get_secret_value(),
+        default=DefaultBotProperties(parse_mode=ParseMode.MARKDOWN),
+    )
     dp = Dispatcher(storage=storage)
 
     dp.message.middleware(DbSessionMiddleware(async_session))

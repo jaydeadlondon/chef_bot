@@ -16,12 +16,13 @@ class GigaChatService(AIService):
             verify_ssl_certs=False,
         )
 
-    async def get_recipe_suggestions(self, ingredients: str) -> str:
-        system_prompt = (
-            "Ты — профессиональный шеф-повар. Твоя задача — предложить рецепты "
-            "на основе списка продуктов от пользователя. Отвечай структурировано."
-        )
-
+    async def get_recipe_suggestions(self, prompt: str) -> str:
         with self.client as giga:
-            response = giga.chat(f"{system_prompt}\nПродукты: {ingredients}")
+            full_prompt = (
+                f"Ты шеф-повар. Предложи рецепт по запросу: {prompt}. "
+                "ВАЖНО: Используй только стандартную разметку Markdown. "
+                "Для заголовков используй жирный текст (например, **Ингредиенты:**). "
+                "Не используй символы # или ###."
+            )
+            response = giga.chat(full_prompt)
             return response.choices[0].message.content

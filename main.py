@@ -4,10 +4,13 @@ from aiogram import Bot, Dispatcher
 from core.config import config
 from handlers import common, recipes
 from services.ai_service import GigaChatService
+from database.engine import init_db
 
 
 async def main():
     logging.basicConfig(level=logging.INFO)
+
+    await init_db()
 
     bot = Bot(token=config.bot_token.get_secret_value())
     dp = Dispatcher()

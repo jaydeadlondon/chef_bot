@@ -4,6 +4,8 @@ from states.recipe import RecipeStates
 from services.ai_service import AIService
 from database.repositories import RecipeRepository
 from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from .common import show_favorites
 
 router = Router()
 
@@ -68,3 +70,46 @@ async def save_to_favorites(callback: types.CallbackQuery, session: AsyncSession
 
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.answer("Рецепт сохранен!")
+
+
+@router.callback_query(F.data.startswith("view_"))
+async def view_recipe(callback: types.CallbackQuery, session: AsyncSession):
+    recipe_id = int(callback.data.split("_")[1])
+    repo = RecipeRepository(session)
+    recipe = await repo.get_recipe_by_id(recipe_id)
+
+    if not recipe:
+        await callback.answer("Рецепт не найден.")
+        return
+
+    kb = InlineKeyboardBuilder()
+    kb.row(
+        types.InlineKeyboardButton(
+            text="🗑 Удалить", callback_data=f"delete_{recipe.id}"
+        )
+    )
+    kb.row(
+        types.InlineKeyboardButton(
+            text="⬅️ Назад к списку", callback_data="back_to_list"
+        )
+    )
+
+    await callback.message.edit_text(
+        recipe.content, reply_markup=kb.as_markup(), parse_mode="MARKDOWN"
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "back_to_list")
+async def back_to_list(callback: types.CallbackQuery, session: AsyncSession):
+    await show_favorites(callback.message, session)
+    await callback.message.delete()
+
+
+@router.callback_query(F.data.startswith("delete_"))
+async def delete_recipe(callback: types.CallbackQuery, session: AsyncSession):
+    recipe_id = int(callback.data.split("_")[1])
+    repo = RecipeRepository(session)
+    await repo.delete_recipe(recipe_id)
+    await callback.answer("Рецепт удален!")
+    await back_to_list(callback, session)

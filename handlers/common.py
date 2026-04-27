@@ -3,6 +3,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from database.repositories import RecipeRepository
 from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 router = Router()
 
@@ -22,13 +23,19 @@ async def show_favorites(message: types.Message, session: AsyncSession):
     recipes = await repo.get_user_recipes(message.from_user.id)
 
     if not recipes:
-        await message.answer("У вас пока нет сохраненных рецептов.")
+        await message.answer(
+            "У вас пока нет сохраненных рецептов. Сначала приготовьте что-нибудь! 👨‍🍳"
+        )
         return
 
-    response = "<b>Ваши сохраненные рецепты:</b>\n\n"
-    for idx, r in enumerate(recipes, 1):
-        response += f"{idx}. {r.title}\n"
+    builder = InlineKeyboardBuilder()
+    for r in recipes:
+        builder.row(
+            types.InlineKeyboardButton(text=r.title, callback_data=f"view_{r.id}")
+        )
 
-    response += "\n<i>Чтобы прочитать рецепт полностью, просто нажмите на его название (функция в разработке)</i>"
-
-    await message.answer(response, parse_mode="HTML")
+    await message.answer(
+        "<b>Ваша кулинарная книга:</b>\nВыберите рецепт для просмотра:",
+        reply_markup=builder.as_markup(),
+        parse_mode="HTML",
+    )

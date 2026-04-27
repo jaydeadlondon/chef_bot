@@ -25,3 +25,15 @@ class RecipeRepository:
         )
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def get_recipe_by_id(self, recipe_id: int):
+        query = select(FavoriteRecipe).where(FavoriteRecipe.id == recipe_id)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def delete_recipe(self, recipe_id: int):
+        from sqlalchemy import delete
+
+        query = delete(FavoriteRecipe).where(FavoriteRecipe.id == recipe_id)
+        await self.session.execute(query)
+        await self.session.commit()

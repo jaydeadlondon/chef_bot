@@ -60,7 +60,7 @@ async def process_servings(
     user_repo = UserRepository(session)
     user = await user_repo.get_user(message.from_user.id)
 
-    wait_msg = await message.answer("Шеф проверяет продукты... ⏳")
+    wait_msg = await message.answer("Шеф высчитывает калории и готовит рецепт... ⏳")
 
     prompt = (
         f"Продукты: {data.get('ingredients')}. "
@@ -85,13 +85,13 @@ async def process_servings(
         inline_keyboard=[
             [
                 types.InlineKeyboardButton(
-                    text="⭐ Сохранить в избранное", callback_data="save_recipe"
+                    text="⭐ Сохранить с КБЖУ", callback_data="save_recipe"
                 )
             ]
         ]
     )
 
-    await message.answer(recipe_text, reply_markup=kb)
+    await message.answer(recipe_text, reply_markup=kb, parse_mode="MARKDOWN")
     await state.clear()
 
 

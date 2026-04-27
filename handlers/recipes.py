@@ -10,6 +10,17 @@ from .common import show_favorites
 router = Router()
 
 
+def is_refusal(text: str) -> bool:
+    stop_phrases = [
+        "чувствительные темы",
+        "не обладают собственным мнением",
+        "разговоры на чувствительные темы",
+        "извините, я не могу",
+        "некорректный запрос",
+    ]
+    return any(phrase in text.lower() for phrase in stop_phrases)
+
+
 @router.message(F.text.contains("Найти рецепт"))
 async def start_wizard(message: types.Message, state: FSMContext):
     await state.set_state(RecipeStates.waiting_for_ingredients)
@@ -20,6 +31,12 @@ async def start_wizard(message: types.Message, state: FSMContext):
 
 @router.message(RecipeStates.waiting_for_ingredients)
 async def process_ingredients(message: types.Message, state: FSMContext):
+    if len(message.text) < 3:
+        await message.answer(
+            "Слишком короткое название. Напишите подробнее, что у вас есть?"
+        )
+        return
+
     await state.update_data(ingredients=message.text)
     await state.set_state(RecipeStates.waiting_for_preferences)
     await message.answer("Любые пожелания (веган, без соли и т.д.)?")
@@ -33,14 +50,36 @@ async def process_prefs(message: types.Message, state: FSMContext):
 
 
 @router.message(RecipeStates.waiting_for_servings)
-async def process_finish(
-    message: types.Message, state: FSMContext, ai_service: AIService
+async def process_servings(
+    message: types.Message,
+    state: FSMContext,
+    ai_service: AIService,
+    session: AsyncSession,
 ):
     data = await state.get_data()
-    wait_msg = await message.answer("Шеф готовит ответ... ⏳")
+    user_repo = UserRepository(session)
+    user = await user_repo.get_user(message.from_user.id)
 
-    prompt = f"Продукты: {data['ingredients']}, предпочтения: {data['preferences']}, порции: {message.text}"
+    wait_msg = await message.answer("Шеф проверяет продукты... ⏳")
+
+    prompt = (
+        f"Продукты: {data.get('ingredients')}. "
+        f"Пожелания: {data.get('preferences')}. "
+        f"Ограничения профиля: {user.preferences}. "
+        f"Порций: {message.text}."
+    )
+
     recipe_text = await ai_service.get_recipe_suggestions(prompt)
+    await wait_msg.delete()
+
+    if is_refusal(recipe_text):
+        await message.answer(
+            "🤨 Похоже, из этих 'ингредиентов' ничего съедобного не получится. "
+            "Пожалуйста, введите нормальный список продуктов.",
+            reply_markup=None,
+        )
+        await state.clear()
+        return
 
     kb = types.InlineKeyboardMarkup(
         inline_keyboard=[
@@ -52,7 +91,6 @@ async def process_finish(
         ]
     )
 
-    await wait_msg.delete()
     await message.answer(recipe_text, reply_markup=kb)
     await state.clear()
 

@@ -8,13 +8,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 router = Router()
 
 
-@router.message(CommandStart())
-async def cmd_start(message: types.Message, state: FSMContext, session: AsyncSession):
-    await state.clear()
-
-    repo = UserRepository(session)
-    await repo.get_or_create_user(message.from_user.id, message.from_user.username)
-
+def get_main_kb():
     kb = [
         [types.KeyboardButton(text="Найти рецепт 🍳")],
         [
@@ -22,8 +16,18 @@ async def cmd_start(message: types.Message, state: FSMContext, session: AsyncSes
             types.KeyboardButton(text="⭐ Избранное"),
         ],
     ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
-    await message.answer("Привет! Я твой Шеф-бот. Что сделаем?", reply_markup=keyboard)
+    return types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+
+
+@router.message(CommandStart())
+async def cmd_start(message: types.Message, state: FSMContext, session: AsyncSession):
+    await state.clear()
+    repo = UserRepository(session)
+    await repo.get_or_create_user(message.from_user.id, message.from_user.username)
+
+    await message.answer(
+        "Привет! Я твой Шеф-бот. Что сделаем?", reply_markup=get_main_kb()
+    )
 
 
 async def show_favorites_logic(

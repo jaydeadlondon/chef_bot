@@ -6,6 +6,7 @@ from database.repositories import RecipeRepository, UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import logging
+from handlers.common import get_main_kb
 
 router = Router()
 
@@ -119,7 +120,11 @@ async def save_to_favorites(callback: types.CallbackQuery, session: AsyncSession
     )
 
     await callback.message.edit_reply_markup(reply_markup=None)
+
     await callback.answer("Рецепт сохранен!")
+    await callback.message.answer(
+        "✅ Рецепт в вашей кулинарной книге. Что дальше?", reply_markup=get_main_kb()
+    )
 
 
 @router.callback_query(F.data.startswith("view_"))

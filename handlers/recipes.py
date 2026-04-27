@@ -5,7 +5,7 @@ from services.ai_service import AIService
 from database.repositories import RecipeRepository, UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from .common import show_favorites
+import logging
 
 router = Router()
 
@@ -60,43 +60,51 @@ async def process_servings(
     user_repo = UserRepository(session)
     user = await user_repo.get_user(message.from_user.id)
 
-    wait_msg = await message.answer("Шеф высчитывает калории и готовит рецепт... ⏳")
+    wait_msg = await message.answer(
+        "Шеф составляет рецепт, учитывая ваши пожелания... ⏳"
+    )
 
     prompt = (
         f"Продукты: {data.get('ingredients')}. "
-        f"Пожелания: {data.get('preferences')}. "
-        f"Ограничения профиля: {user.preferences}. "
+        f"Разовые пожелания: {data.get('preferences')}. "
+        f"Постоянные ограничения профиля: {user.preferences}. "
         f"Порций: {message.text}."
     )
 
-    recipe_text = await ai_service.get_recipe_suggestions(prompt)
-    await wait_msg.delete()
+    try:
+        recipe_text = await ai_service.get_recipe_suggestions(prompt)
 
-    if is_refusal(recipe_text):
-        await message.answer(
-            "🤨 Похоже, из этих 'ингредиентов' ничего съедобного не получится. "
-            "Пожалуйста, введите нормальный список продуктов.",
-            reply_markup=None,
+        await wait_msg.delete()
+
+        if is_refusal(recipe_text):
+            await message.answer(
+                "🤨 Похоже, эти продукты не слишком съедобные. Попробуйте другие."
+            )
+            await state.clear()
+            return
+
+        kb = types.InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="⭐ Сохранить", callback_data="save_recipe"
+                    ),
+                    types.InlineKeyboardButton(
+                        text="⬅️ Назад", callback_data="start_new_search"
+                    ),
+                ]
+            ]
+        )
+
+        await message.answer(recipe_text, reply_markup=kb, parse_mode="MARKDOWN")
+        await state.clear()
+
+    except Exception as e:
+        logging.error(f"AI Service Error: {e}")
+        await wait_msg.edit_text(
+            "❌ Произошла ошибка при связи с Шефом. Попробуйте через минуту."
         )
         await state.clear()
-        return
-
-    kb = types.InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                types.InlineKeyboardButton(
-                    text="⭐ Сохранить", callback_data="save_recipe"
-                ),
-                types.InlineKeyboardButton(
-                    text="⬅️ Назад", callback_data="start_new_search"
-                ),
-            ]
-        ]
-    )
-
-    await wait_msg.delete()
-    await message.answer(recipe_text, reply_markup=kb, parse_mode="MARKDOWN")
-    await state.clear()
 
 
 @router.callback_query(F.data == "save_recipe")
@@ -164,29 +172,3 @@ async def delete_recipe(callback: types.CallbackQuery, session: AsyncSession):
     await repo.delete_recipe(recipe_id)
     await callback.answer("Рецепт удален!")
     await back_to_list(callback, session)
-
-
-@router.message(RecipeStates.waiting_for_servings)
-async def process_finish(
-    message: types.Message,
-    state: FSMContext,
-    ai_service: AIService,
-    session: AsyncSession,
-):
-    data = await state.get_data()
-
-    user_repo = UserRepository(session)
-    user = await user_repo.get_user(message.from_user.id)
-
-    wait_msg = await message.answer(
-        "Шеф готовит ответ, учитывая пожелания в вашем профиле... ⏳"
-    )
-
-    full_prompt = (
-        f"Продукты: {data['ingredients']}. "
-        f"Дополнительные пожелания к этому блюду: {data['preferences']}. "
-        f"Постоянные ограничения пользователя: {user.preferences}. "
-        f"Количество порций: {message.text}."
-    )
-
-    recipe_text = await ai_service.get_recipe_suggestions(full_prompt)

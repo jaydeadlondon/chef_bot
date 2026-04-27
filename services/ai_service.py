@@ -31,7 +31,5 @@ class GigaChatService(AIService):
             "Указывай только примерные значения на основе состава блюда."
         )
 
-        with self.client as giga:
-            full_prompt = f"{system_instruction}\n\nЗапрос: {prompt}"
-            response = giga.chat(full_prompt)
-            return response.choices[0].message.content
+        response = self.client.chat(f"{system_instruction}\n\nЗапрос: {prompt}")
+        return response.choices[0].message.content

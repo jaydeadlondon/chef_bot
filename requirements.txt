@@ -1,0 +1,4 @@
+aiogram==3.13.1
+gigachat==0.1.26
+pydantic-settings==2.5.2
+python-dotenv==1.0.1

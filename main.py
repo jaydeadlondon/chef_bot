@@ -1,30 +1,34 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio import Redis
+
 from core.config import config
+from database.engine import init_db, async_session
 from handlers import common, recipes
 from services.ai_service import GigaChatService
-from database.engine import init_db
+from middlewares.db_middleware import DbSessionMiddleware
 
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-
     await init_db()
 
-    bot = Bot(token=config.bot_token.get_secret_value())
-    dp = Dispatcher()
+    redis = Redis(host=config.redis_host, port=config.redis_port)
+    storage = RedisStorage(redis=redis)
 
-    ai_service = GigaChatService()
+    bot = Bot(token=config.bot_token.get_secret_value())
+    dp = Dispatcher(storage=storage)
+
+    dp.message.middleware(DbSessionMiddleware(async_session))
 
     dp.include_router(common.router)
     dp.include_router(recipes.router)
 
+    ai_service = GigaChatService()
     await dp.start_polling(bot, ai_service=ai_service)
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("Бот выключен")
+    asyncio.run(main())

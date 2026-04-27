@@ -1,19 +1,13 @@
 from aiogram import Router, types
 from aiogram.filters import CommandStart
-from database.repositories import UserRepository
-from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.fsm.context import FSMContext
 
 router = Router()
 
 
 @router.message(CommandStart())
-async def cmd_start(message: types.Message, session: AsyncSession):
-    repo = UserRepository(session)
-    user = await repo.get_or_create_user(
-        message.from_user.id, message.from_user.username
-    )
-
-    await message.answer(
-        f"Привет, {user.username or 'Шеф'}! Я помогу приготовить ужин из того, что есть.\n"
-        "Просто пришли мне список продуктов."
-    )
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.clear()
+    kb = [[types.KeyboardButton(text="Найти рецепт 🍳")]]
+    keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+    await message.answer("Привет! Нажми кнопку, чтобы начать.", reply_markup=keyboard)

@@ -10,7 +10,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
+  redis:
+    image: redis:7-alpine
+    container_name: chef_bot_redis
+    restart: always
+    ports:
+      - "6379:6379"
 
   bot:
     build: .

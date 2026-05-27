@@ -1,44 +1,44 @@
-# Chief — Твой AI-Шеф в Telegram
+# Chief — Your AI Chef on Telegram
 
-Chief — это интеллектуальный ассистент для планирования ужина, работающий на базе нейросети GigaChat. Бот помогает превратить имеющиеся в холодильнике продукты в полноценные рецепты, учитывая ваши диетические предпочтения, аллергии и количество персон.
+Chief is an intelligent dinner planning assistant powered by the GigaChat neural network. The bot helps transform the ingredients in your fridge into complete recipes, taking into account your dietary preferences, allergies, and the number of guests.
 
-✨ Основные функции
+✨ Key Features
 
-- Умный подбор рецептов: генерация пошаговых инструкций на основе списка ингредиентов.
-- Персонализация (Профиль): один раз укажите свои аллергии или предпочтения (веган, ПП, без лактозы) — бот будет учитывать их в каждом запросе.
-- Расчет КБЖУ: автоматическая оценка калорийности, белков, жиров и углеводов для каждого блюда.
-- Кулинарная книга (Избранное): сохранение понравившихся рецептов в базе данных PostgreSQL для быстрого доступа.
-- Список покупок: моментальное извлечение списка ингредиентов из рецепта для похода в магазин.
-- Встроенные таймеры: запуск уведомлений о готовности прямо внутри чата.
-- Безопасность: интегрированный фильтр содержимого (защита от некорректных или несъедобных запросов).
+- Smart recipe selection: generates step-by-step instructions based on your ingredient list.
+- Personalization (Profile): Enter your allergies or preferences (vegan, healthy eating, lactose-free) once, and the bot will take them into account with every request.
+- Nutrition Calculator: automatically estimates calories, protein, fat, and carbohydrates for each dish.
+- Cookbook (Favorites): saves your favorite recipes in a PostgreSQL database for quick access.
+- Shopping List: instantly generates a list of ingredients from a recipe for your next trip to the store.
+- Built-in timers: receive ready notifications right within the chat.
+- Security: integrated content filter (protection against incorrect or inedible requests).
 
-🛠 Технологический стек
+🛠 Technology Stack
 
-- Язык: Python 3.10+
-- Бот-платформа: aiogram 3.x (asyncio)
-- Нейросеть (LLM): GigaChat API (SberDevices)
-- База данных: PostgreSQL 15
-- ORM: SQLAlchemy 2.0 (асинхронный драйвер asyncpg)
-- FSM & Кэш: Redis (хранение состояний пользователей)
-- Контейнеризация: Docker & Docker Compose
-- Валидация данных: Pydantic Settings 2.x
+- Language: Python 3.10+
+- Bot platform: aiogram 3.x (asyncio)
+- Neural network (LLM): GigaChat API (SberDevices)
+- Database: PostgreSQL 15
+- ORM: SQLAlchemy 2.0 (asyncpg asynchronous driver)
+- FSM & Cache: Redis (user state storage)
+- Containerization: Docker & Docker Compose
+- Data validation: Pydantic Settings 2.x
 
-🚀 Быстрый запуск
+🚀 Quick Start
 
-1. Подготовка окружения
+1. Setting up the environment
 
-   Убедитесь, что у вас установлены Docker и Docker Compose.
+   Make sure you have Docker and Docker Compose installed.
 
-2. Клонирование репозитория
+2. Cloning the repository
 
 ```bash
 git clone https://github.com/jaydeadlondon/chef_bot.git
 cd chef_bot
 ```
 
-3. Настройка переменных окружения
+3. Configuring environment variables
 
-Создайте файл `.env` в корневой папке проекта и укажите необходимые переменные:
+Create a `.env` file in the project root directory and specify the required variables:
 
 ```env
 # Telegram
@@ -59,41 +59,40 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 ```
 
-4. Запуск через Docker
+4. Running via Docker
 
 ```bash
 docker-compose up --build -d
 ```
 
-Бот автоматически применит схему базы данных и начнёт работу.
+The bot will automatically apply the database schema and start running. 
 
-📁 Структура проекта
+📁 Project Structure
 
 ```text
 chef_bot/
-├── core/               # Конфигурация и настройки Pydantic
-├── database/           # Модели SQLAlchemy, движок и репозитории
-├── handlers/           # Логика обработки команд и сообщений (Common, Recipes, Profile)
-├── middlewares/        # Внедрение зависимостей (DB Session)
-├── services/           # Интеграция с внешними API (GigaChat Service)
-├── states/             # Определения состояний FSM
-├── Dockerfile          # Инструкции по сборки образа приложения
-├── docker-compose.yml  # Оркестрация контейнеров (App, DB, Redis)
-├── main.py             # Точка входа в приложение
-└── requirements.txt    # Зависимости проекта
+├── core/               # Pydantic configuration and settings
+├── database/           # SQLAlchemy models, engine, and repositories
+├── handlers/           # Command and message processing logic (Common, Recipes, Profile)
+├── middlewares/        # Dependency injection (DB Session)
+├── services/           # Integration with external APIs (GigaChat Service)
+├── states/             # FSM state definitions
+├── Dockerfile          # Instructions for building the application image
+├── docker-compose.yml  # Container orchestration (App, DB, Redis)
+├── main.py             # Application entry point
+└── requirements.txt    # Project dependencies
 ```
 
-🏗 Архитектурные принципы
+🏗 Architectural Principles
 
-В проекте соблюдаются принципы SOLID:
+The project adheres to the SOLID principles:
 
-- Single Responsibility: каждый хендлер и сервис отвечает только за свою задачу.
-- Dependency Inversion: работа с нейросетью скрыта за абстракцией `AIService`, что позволяет заменить модель (на ChatGPT/YandexGPT) без изменения бизнес-логики.
-- Repository Pattern: работа с базой данных изолирована от логики Telegram-бота.
+- Single Responsibility: each handler and service is responsible only for its own task.
+- Dependency Inversion: interaction with the neural network is hidden behind the `AIService` abstraction, allowing the model to be replaced (with ChatGPT/YandexGPT) without changing the business logic.
+- Repository Pattern: database operations are isolated from the Telegram bot’s logic.
 
-📝 Команды бота
+📝 Bot Commands
 
-- `/start` — перезапуск и выход в главное меню.
-- `/my_recipes` — просмотр сохранённых рецептов.
-- `/profile` — настройка диетических предпочтений.
-
+- `/start` — Restart and return to the main menu.
+- `/my_recipes` — View saved recipes.
+- `/profile` — Set dietary preferences.

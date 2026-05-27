@@ -2,7 +2,7 @@
 
 Chief is an intelligent dinner planning assistant powered by the GigaChat neural network. The bot helps transform the ingredients in your fridge into complete recipes, taking into account your dietary preferences, allergies, and the number of guests.
 
-✨ Key Features
+## ✨ Key Features
 
 - Smart recipe selection: generates step-by-step instructions based on your ingredient list.
 - Personalization (Profile): Enter your allergies or preferences (vegan, healthy eating, lactose-free) once, and the bot will take them into account with every request.
@@ -12,7 +12,7 @@ Chief is an intelligent dinner planning assistant powered by the GigaChat neural
 - Built-in timers: receive ready notifications right within the chat.
 - Security: integrated content filter (protection against incorrect or inedible requests).
 
-🛠 Technology Stack
+## 🛠 Technology Stack
 
 - Language: Python 3.10+
 - Bot platform: aiogram 3.x (asyncio)
@@ -23,20 +23,20 @@ Chief is an intelligent dinner planning assistant powered by the GigaChat neural
 - Containerization: Docker & Docker Compose
 - Data validation: Pydantic Settings 2.x
 
-🚀 Quick Start
+## 🚀 Quick Start
 
-1. Setting up the environment
+### 1. Setting up the environment
 
    Make sure you have Docker and Docker Compose installed.
 
-2. Cloning the repository
+### 2. Cloning the repository
 
 ```bash
 git clone https://github.com/jaydeadlondon/chef_bot.git
 cd chef_bot
 ```
 
-3. Configuring environment variables
+### 3. Configuring environment variables
 
 Create a `.env` file in the project root directory and specify the required variables:
 
@@ -59,7 +59,7 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 ```
 
-4. Running via Docker
+### 4. Running via Docker
 
 ```bash
 docker-compose up --build -d
@@ -67,7 +67,7 @@ docker-compose up --build -d
 
 The bot will automatically apply the database schema and start running. 
 
-📁 Project Structure
+## 📁 Project Structure
 
 ```text
 chef_bot/
@@ -83,7 +83,7 @@ chef_bot/
 └── requirements.txt    # Project dependencies
 ```
 
-🏗 Architectural Principles
+## 🏗 Architectural Principles
 
 The project adheres to the SOLID principles:
 
@@ -91,7 +91,7 @@ The project adheres to the SOLID principles:
 - Dependency Inversion: interaction with the neural network is hidden behind the `AIService` abstraction, allowing the model to be replaced (with ChatGPT/YandexGPT) without changing the business logic.
 - Repository Pattern: database operations are isolated from the Telegram bot’s logic.
 
-📝 Bot Commands
+## 📝 Bot Commands
 
 - `/start` — Restart and return to the main menu.
 - `/my_recipes` — View saved recipes.
